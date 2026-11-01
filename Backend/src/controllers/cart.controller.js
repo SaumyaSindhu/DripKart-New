@@ -242,6 +242,68 @@ export const createOrderController = async (req, res) => {
     })
 }
 
+export const createBuyNowOrderController = async (req, res) => {
+  const { productId, variantId } = req.params;
+
+  const product = await productModel.findById(productId);
+
+  if (!product) {
+    return res.status(404).json({
+      message: "Product not found",
+      success: false,
+    });
+  }
+
+  const variant = product.variants.id(variantId);
+
+  if (!variant) {
+    return res.status(404).json({
+      message: "Variant not found",
+      success: false,
+    });
+  }
+
+  if (variant.stock < 1) {
+    return res.status(400).json({
+      message: "This item is out of stock",
+      success: false,
+    });
+  }
+
+  // variant price if it has one, otherwise the product's base price
+  const price = variant.price?.amount ? variant.price : product.price;
+  const { amount, currency } = price;
+
+  const order = await createOrder({ amount, currency });
+
+  await paymentModel.create({
+    user: req.user._id,
+    razorpay: {
+      orderId: order.id,
+    },
+    price: { amount, currency },
+    orderItems: [
+      {
+        title: product.title,
+        productId: product._id,
+        variantId: variant._id,
+        quantity: 1,
+        images: (variant.images?.length ? variant.images : product.images).map(
+          (img) => ({ url: img.url }),
+        ),
+        description: product.description,
+        price: { amount, currency },
+      },
+    ],
+  });
+
+  return res.status(200).json({
+    message: "Order created successfully",
+    success: true,
+    order,
+  });
+};
+
 export const verifyOrderController = async (req, res) => {
     const {
         razorpay_order_id,

@@ -1,7 +1,7 @@
 import express from 'express';
 import { authenticateUser } from '../middlewares/auth.middleware.js';
-import { validateAddToCart, validateIncrementCartItemQuantity, validateDecrementCartItemQuantity, validateRemoveCartItem } from '../validator/cart.validator.js';
-import { addToCart, createOrderController, getCart, incrementCartItemQuantity, decrementCartItemQuantity, removeCartItem, verifyOrderController } from '../controllers/cart.controller.js';
+import { validateAddToCart, validateIncrementCartItemQuantity, validateDecrementCartItemQuantity, validateRemoveCartItem, validateBuyNowOrder } from "../validator/cart.validator.js";
+import { addToCart, createOrderController, createBuyNowOrderController, getCart, incrementCartItemQuantity, decrementCartItemQuantity, removeCartItem, verifyOrderController } from '../controllers/cart.controller.js';
 
 
 const router = express.Router();
@@ -49,6 +49,13 @@ router.patch("/quantity/decrement/:productId/:variantId", authenticateUser, vali
  * @access Private
  */
 router.delete("/item/:productId/:variantId", authenticateUser, validateRemoveCartItem, removeCartItem)
+
+/**
+ * @route POST /api/cart/payment/create/buy-now/:productId/:variantId
+ * @desc Create a payment order for a single product variant (skips the cart)
+ * @access Private
+ */
+router.post("/payment/create/buy-now/:productId/:variantId", authenticateUser, validateBuyNowOrder, createBuyNowOrderController)
 
 
 /**

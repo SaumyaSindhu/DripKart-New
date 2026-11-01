@@ -35,3 +35,9 @@ export const validateDecrementCartItemQuantity = [
   param("variantId").isMongoId().withMessage("Invalid variant ID"),
   validateRequest,
 ];
+
+export const validateBuyNowOrder = [
+    param("productId").isMongoId().withMessage("Invalid product ID"),
+    param("variantId").isMongoId().withMessage("Invalid variant ID"),
+    validateRequest
+];

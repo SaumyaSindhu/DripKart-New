@@ -2,6 +2,8 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router';
 import { useProduct } from '../hooks/useProduct';
 import { useCart } from '../../cart/hook/useCart';
+import { useSelector } from "react-redux";
+import { useRazorpay } from "react-razorpay";
 
 // Add-to-cart button look + text for each state
 const ADD_BTN_STYLES = {
@@ -20,6 +22,21 @@ const ADD_BTN_LABELS = {
     signin: 'Please sign in first',
 };
 
+// Buy Now button look + text for each state
+const BUY_BTN_STYLES = {
+    idle: 'bg-transparent border-[#d0c5b5] text-[#1b1c1a] hover:border-[#C9A96E]',
+    loading: 'bg-transparent border-[#d0c5b5] text-[#1b1c1a] cursor-wait',
+    error: 'bg-transparent border-[#b42318] text-[#b42318]',
+    signin: 'bg-transparent border-[#b42318] text-[#b42318]',
+};
+
+const BUY_BTN_LABELS = {
+    idle: 'Buy Now',
+    loading: 'Processing',
+    error: "Couldn't start checkout. Try again",
+    signin: 'Please sign in first',
+};
+
 const ProductDetail = () => {
   const { productId } = useParams();
   const [product, setProduct] = useState(null);
@@ -27,9 +44,13 @@ const ProductDetail = () => {
   const [selectedAttributes, setSelectedAttributes] = useState({});
   const navigate = useNavigate();
   const { handleGetProductById } = useProduct();
-  const { handleAddItem, handleGetCart } = useCart();
+  const { handleAddItem, handleGetCart, handleCreateBuyNowOrder, handleVerifyCartOrder } = useCart();
+  const { Razorpay } = useRazorpay();
+  const user = useSelector((state) => state.auth.user);
   const [addStatus, setAddStatus] = useState("idle");
   const [touchStartX, setTouchStartX] = useState(null); // for swiping the gallery on mobile
+  const [buyStatus, setBuyStatus] = useState("idle"); // idle | loading | error | signin
+  const [buyMessage, setBuyMessage] = useState("");
 
   async function fetchProductDetails() {
     try {
@@ -167,6 +188,67 @@ const ProductDetail = () => {
   const displayPrice = activeVariant?.price?.amount
     ? activeVariant.price
     : product.price;
+
+        const onBuyNow = async () => {
+          if (buyStatus !== "idle") return; // ignore clicks while working
+
+          const failWith = (status, message = "") => {
+            setBuyMessage(message);
+            setBuyStatus(status);
+            setTimeout(() => setBuyStatus("idle"), 2500);
+          };
+
+          if (!activeVariant) {
+            failWith("error");
+            return;
+          }
+
+          setBuyStatus("loading");
+          try {
+            // creates a payment order for just this piece (the cart is not touched)
+            const order = await handleCreateBuyNowOrder({
+              productId: product._id,
+              variantId: activeVariant._id,
+            });
+
+            const options = {
+              key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+              amount: order.amount, // Amount in paise
+              currency: order.currency,
+              name: "DripKart",
+              description: product.title,
+              order_id: order.id,
+              handler: async (response) => {
+                const isValid = await handleVerifyCartOrder(response);
+
+                if (isValid) {
+                  navigate(
+                    `/order-success?order_id=${response?.razorpay_order_id}`,
+                  );
+                }
+              },
+              prefill: {
+                name: user?.fullname,
+                email: user?.email,
+                contact: user?.contact,
+              },
+              theme: {
+                color: "#C9A96E",
+              },
+            };
+
+            const razorpayInstance = new Razorpay(options);
+            razorpayInstance.open();
+            setBuyStatus("idle"); // the Razorpay window takes over from here
+          } catch (error) {
+            console.error("Buy now failed", error);
+            if (error?.response?.status === 401) {
+              failWith("signin");
+            } else {
+              failWith("error", error?.response?.data?.message || "");
+            }
+          }
+        };
 
   const onAddToCart = async () => {
     if (addStatus !== "idle") return; // ignore clicks while animating
@@ -496,21 +578,36 @@ const ProductDetail = () => {
                 </button>
 
                 <button
-                  className="w-full py-4 text-[11px] uppercase tracking-[0.25em] font-medium transition-all duration-300 border"
-                  style={{
-                    backgroundColor: "transparent",
-                    borderColor: "#d0c5b5",
-                    color: "#1b1c1a",
-                    fontFamily: "'Inter', sans-serif",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "#C9A96E";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = "#d0c5b5";
-                  }}
+                  type="button"
+                  onClick={onBuyNow}
+                  disabled={buyStatus === "loading"}
+                  aria-live="polite"
+                  className={`w-full py-4 text-[11px] uppercase tracking-[0.25em] font-medium transition-all duration-300 border ${BUY_BTN_STYLES[buyStatus]} ${buyStatus === "error" || buyStatus === "signin" ? "shake" : ""}`}
+                  style={{ fontFamily: "'Inter', sans-serif" }}
                 >
-                  Buy Now
+                  <span
+                    key={buyStatus}
+                    className="label-in inline-flex items-center justify-center gap-2.5"
+                  >
+                    {buyStatus === "loading" && (
+                      <svg
+                        className="animate-spin"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                      >
+                        <path d="M21 12a9 9 0 1 1-6.2-8.55" />
+                      </svg>
+                    )}
+                    {buyStatus === "error" && buyMessage
+                      ? buyMessage
+                      : BUY_BTN_LABELS[buyStatus]}
+                  </span>
                 </button>
               </div>
 
