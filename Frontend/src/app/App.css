@@ -99,3 +99,38 @@ html {
   .hero-img { transition: none; transform: none; }
 }
 
+/* ── Add to cart button ── */
+@keyframes labelIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+.label-in { animation: labelIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes popIn {
+  0%   { transform: scale(0.3); opacity: 0; }
+  60%  { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.pop-in { animation: popIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes drawCheck {
+  from { stroke-dashoffset: 24; }
+  to   { stroke-dashoffset: 0; }
+}
+.check-draw {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: drawCheck 0.45s ease-out 0.15s forwards;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+.shake { animation: shake 0.45s ease both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .label-in, .pop-in, .shake { animation: none; }
+  .check-draw { animation: none; stroke-dashoffset: 0; }
+}
