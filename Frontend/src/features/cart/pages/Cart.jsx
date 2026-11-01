@@ -26,6 +26,7 @@ const Cart = () => {
   const {
     handleGetCart,
     handleIncrementCartItem,
+    handleDecrementCartItem,
     handleRemoveCartItem,
     handleCreateCartOrder,
     handleVerifyCartOrder,
@@ -34,15 +35,16 @@ const Cart = () => {
   const { error, isLoading, Razorpay } = useRazorpay();
   const user = useSelector((state) => state.user);
 
-  /* Local quantity state — key: cartItem._id, value: number */
-  const [quantities, setQuantities] = useState({});
-
   /* Which cart row is being removed / failed to remove (key: productId-variantId) */
   const [removingKey, setRemovingKey] = useState(null);
   const [failedKey, setFailedKey] = useState(null);
 
+  /* Which cart row is updating its quantity, and any message from the server */
+  const [updatingKey, setUpdatingKey] = useState(null);
+  const [qtyError, setQtyError] = useState(null); // { key, message }
+
   const onRemove = async (productId, variantId, itemKey) => {
-    if (removingKey) return;
+    if (removingKey || updatingKey) return;
     setFailedKey(null);
     setRemovingKey(itemKey);
     try {
@@ -56,20 +58,42 @@ const Cart = () => {
     }
   };
 
+  /* delta: +1 increments, -1 decrements. The server is the source of truth. */
+  const onChangeQty = async (productId, variantId, itemKey, delta) => {
+    if (updatingKey || removingKey) return;
+    setQtyError(null);
+    setUpdatingKey(itemKey);
+    try {
+      if (delta > 0) {
+        await handleIncrementCartItem({ productId, variantId });
+      } else {
+        await handleDecrementCartItem({ productId, variantId });
+      }
+    } catch (err) {
+      console.error("Failed to update quantity", err);
+      setQtyError({
+        key: itemKey,
+        message:
+          err?.response?.data?.message ||
+          "Couldn't update quantity. Try again.",
+      });
+      setTimeout(() => setQtyError(null), 3500);
+    } finally {
+      setUpdatingKey(null);
+    }
+  };
+
   useEffect(() => {
     handleGetCart();
   }, []);
 
-  const changeQty = (id, delta) => {
-    setQuantities((prev) => ({
-      ...prev,
-      [id]: Math.max(1, (prev[id] ?? 1) + delta),
-    }));
-  };
   /* ─── Helpers ─── */
   const getVariantDetails = (product, variantId) => {
     if (!product?.variants || !variantId) return null;
-    return product.variants;
+
+    return Array.isArray(product.variants)
+      ? product.variants.find((variant) => variant._id === variantId)
+      : product.variants;
   };
 
   const getDisplayImage = (product, variant) => {
@@ -248,11 +272,12 @@ const Cart = () => {
                   const imageUrl = getDisplayImage(product, variantDetail);
                   const displayPrice =
                     price ?? variantDetail?.price ?? product?.price;
-                  const qty = quantities[_id] ?? item.quantity ?? 1;
+                  const qty = item.quantity ?? 1;
                   const attributes = variantDetail?.attributes ?? {};
                   const stock = variantDetail?.stock;
                   const variantPrice = variantDetail?.price;
                   const itemKey = `${_id}-${variantId}`;
+                  const isUpdating = updatingKey === itemKey;
 
                   return (
                     <div
@@ -382,8 +407,12 @@ const Cart = () => {
                           >
                             <button
                               id={`qty-dec-${_id}`}
-                              onClick={() => changeQty(_id, -1)}
-                              className="w-9 h-9 flex items-center justify-center text-sm font-light transition-colors hover:opacity-60"
+                              type="button"
+                              onClick={() =>
+                                onChangeQty(_id, variantId, itemKey, -1)
+                              }
+                              disabled={isUpdating || qty <= 1}
+                              className="w-9 h-9 flex items-center justify-center text-sm font-light transition-colors hover:opacity-60 disabled:opacity-30 disabled:cursor-not-allowed"
                               style={{
                                 color: tokens.onSurface,
                                 borderRight: `1px solid ${tokens.outlineVariant}`,
@@ -393,20 +422,22 @@ const Cart = () => {
                               −
                             </button>
                             <span
-                              className="w-10 text-center text-[11px] tracking-[0.12em] font-medium select-none"
-                              style={{ color: tokens.onSurface }}
+                              className="w-10 text-center text-[11px] tracking-[0.12em] font-medium select-none transition-opacity duration-200"
+                              style={{
+                                color: tokens.onSurface,
+                                opacity: isUpdating ? 0.4 : 1,
+                              }}
                             >
                               {qty}
                             </span>
                             <button
                               id={`qty-inc-${_id}`}
+                              type="button"
                               onClick={() =>
-                                handleIncrementCartItem({
-                                  productId: _id,
-                                  variantId,
-                                })
+                                onChangeQty(_id, variantId, itemKey, 1)
                               }
-                              className="w-9 h-9 flex items-center justify-center text-sm font-light transition-colors hover:opacity-60"
+                              disabled={isUpdating}
+                              className="w-9 h-9 flex items-center justify-center text-sm font-light transition-colors hover:opacity-60 disabled:opacity-30 disabled:cursor-not-allowed"
                               style={{
                                 color: tokens.onSurface,
                                 borderLeft: `1px solid ${tokens.outlineVariant}`,
@@ -437,6 +468,17 @@ const Cart = () => {
                                 ? "Couldn't remove. Try again"
                                 : "Remove"}
                           </button>
+
+                          {/* Quantity message from the server (e.g. stock limit) */}
+                          {qtyError?.key === itemKey && (
+                            <p
+                              role="alert"
+                              className="basis-full text-[10px] uppercase tracking-[0.12em] leading-relaxed"
+                              style={{ color: "#b42318" }}
+                            >
+                              {qtyError.message}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>

@@ -143,6 +143,39 @@ export const incrementCartItemQuantity = async (req, res) => {
     })
 }
 
+export const decrementCartItemQuantity = async (req, res) => {
+  const { productId, variantId } = req.params;
+
+  // Only matches if the item exists AND its quantity is above 1,
+  // so the quantity can never drop below 1 (use remove for that)
+  const cart = await cartModel.findOneAndUpdate(
+    {
+      user: req.user._id,
+      items: {
+        $elemMatch: {
+          product: productId,
+          variant: variantId,
+          quantity: { $gt: 1 },
+        },
+      },
+    },
+    { $inc: { "items.$.quantity": -1 } },
+    { new: true },
+  );
+
+  if (!cart) {
+    return res.status(400).json({
+      message: "Quantity can't go below 1. Use Remove to delete this item.",
+      success: false,
+    });
+  }
+
+  return res.status(200).json({
+    message: "Cart item quantity decremented successfully",
+    success: true,
+  });
+};
+
 export const removeCartItem = async (req, res) => {
   const { productId, variantId } = req.params;
 

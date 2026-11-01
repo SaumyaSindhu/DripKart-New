@@ -1,7 +1,7 @@
 import express from 'express';
 import { authenticateUser } from '../middlewares/auth.middleware.js';
-import { validateAddToCart, validateIncrementCartItemQuantity, validateRemoveCartItem } from '../validator/cart.validator.js';
-import { addToCart, createOrderController, getCart, incrementCartItemQuantity, removeCartItem, verifyOrderController } from '../controllers/cart.controller.js';
+import { validateAddToCart, validateIncrementCartItemQuantity, validateDecrementCartItemQuantity, validateRemoveCartItem } from '../validator/cart.validator.js';
+import { addToCart, createOrderController, getCart, incrementCartItemQuantity, decrementCartItemQuantity, removeCartItem, verifyOrderController } from '../controllers/cart.controller.js';
 
 
 const router = express.Router();
@@ -35,6 +35,13 @@ router.get('/', authenticateUser, getCart)
  * @argument variantId - ID of the variant to update
  */
 router.patch("/quantity/increment/:productId/:variantId", authenticateUser, validateIncrementCartItemQuantity, incrementCartItemQuantity)
+
+/**
+ * @route PATCH /api/cart/quantity/decrement/:productId/:variantId
+ * @desc Decrement item quantity in cart by one (minimum 1)
+ * @access Private
+ */
+router.patch("/quantity/decrement/:productId/:variantId", authenticateUser, validateDecrementCartItemQuantity, decrementCartItemQuantity)
 
 /**
  * @route DELETE /api/cart/item/:productId/:variantId
