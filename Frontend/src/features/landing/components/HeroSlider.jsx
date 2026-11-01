@@ -11,7 +11,7 @@ const FALLBACK_SLIDE = {
   price: null,
 };
 
-const HeroSlider = ({ products }) => {
+const HeroSlider = ({ products, loading = false }) => {
   const slides = products.length > 0 ? products : [FALLBACK_SLIDE];
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -24,6 +24,24 @@ const HeroSlider = ({ products }) => {
     );
     return () => clearInterval(timer);
   }, [paused, slides.length]);
+
+  // while products are loading, show a placeholder instead of the fallback slide
+  if (loading) {
+    return (
+      <section
+        className="grid grid-cols-1 lg:grid-cols-2 lg:h-[calc(100vh-170px)] lg:min-h-[560px]"
+        aria-hidden="true"
+      >
+        <div className="order-2 lg:order-1 flex flex-col justify-center gap-6 px-8 lg:px-16 xl:px-24 py-16 lg:py-0">
+          <div className="skeleton h-3 w-40" />
+          <div className="skeleton h-16 w-4/5" />
+          <div className="skeleton h-4 w-3/5" />
+          <div className="skeleton h-12 w-48 mt-4" />
+        </div>
+        <div className="order-1 lg:order-2 skeleton aspect-[4/5] lg:aspect-auto" />
+      </section>
+    );
+  }
 
   const slide = slides[index] || slides[0];
 
@@ -134,6 +152,6 @@ const HeroSlider = ({ products }) => {
       </div>
     </section>
   );
-};
+};;
 
 export default HeroSlider;

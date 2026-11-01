@@ -28,7 +28,8 @@ const ProductDetail = () => {
   const navigate = useNavigate();
   const { handleGetProductById } = useProduct();
   const { handleAddItem, handleGetCart } = useCart();
-  const [addStatus, setAddStatus] = useState("idle"); 
+  const [addStatus, setAddStatus] = useState("idle");
+  const [touchStartX, setTouchStartX] = useState(null); // for swiping the gallery on mobile
 
   async function fetchProductDetails() {
     try {
@@ -115,21 +116,43 @@ const ProductDetail = () => {
     }
   };
 
-  if (!product) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center selection:bg-[#C9A96E]/30"
-        style={{ backgroundColor: "#fbf9f6" }}
-      >
-        <p
-          style={{ fontFamily: "'Inter', sans-serif", color: "#B5ADA3" }}
-          className="text-[10px] uppercase tracking-[0.2em] font-medium animate-pulse"
-        >
-          Retrieving piece...
-        </p>
-      </div>
-    );
-  }
+      if (!product) {
+        return (
+          <div
+            className="min-h-screen selection:bg-[#C9A96E]/30 pb-24"
+            style={{ backgroundColor: "#fbf9f6" }}
+            aria-hidden="true"
+          >
+            <div className="max-w-7xl mx-auto px-8 lg:px-16 xl:px-24 pt-12 lg:pt-20">
+              <div className="flex flex-col lg:flex-row gap-12 lg:gap-24 items-start">
+                <div className="w-full lg:w-[70%] flex flex-col-reverse md:flex-row gap-4 lg:gap-6">
+                  <div className="flex flex-row md:flex-col gap-4 md:w-20 lg:w-24">
+                    {[...Array(3)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="skeleton w-20 md:w-full aspect-[4/5]"
+                      />
+                    ))}
+                  </div>
+                  <div className="skeleton w-full aspect-[4/5]" />
+                </div>
+                <div className="w-full lg:w-[30%] flex flex-col gap-5 pt-4">
+                  <div className="skeleton h-14 w-4/5" />
+                  <div className="skeleton h-4 w-32" />
+                  <div className="skeleton h-px w-full my-4" />
+                  <div className="skeleton h-3 w-16" />
+                  <div className="flex gap-2">
+                    {[...Array(4)].map((_, i) => (
+                      <div key={i} className="skeleton h-10 w-12" />
+                    ))}
+                  </div>
+                  <div className="skeleton h-14 w-full mt-6" />
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
 
   console.log(product);
 
@@ -145,29 +168,29 @@ const ProductDetail = () => {
     ? activeVariant.price
     : product.price;
 
-    const onAddToCart = async () => {
-      if (addStatus !== "idle") return; // ignore clicks while animating
+  const onAddToCart = async () => {
+    if (addStatus !== "idle") return; // ignore clicks while animating
 
-      if (!activeVariant) {
-        setAddStatus("error");
-        setTimeout(() => setAddStatus("idle"), 2200);
-        return;
-      }
-
-      setAddStatus("loading");
-      try {
-        await handleAddItem({
-          productId: product._id,
-          variantId: activeVariant._id,
-        });
-        handleGetCart().catch(() => {}); // refresh navbar cart badge
-        setAddStatus("success");
-      } catch (error) {
-        console.error("Add to cart failed", error);
-        setAddStatus(error?.response?.status === 401 ? "signin" : "error");
-      }
+    if (!activeVariant) {
+      setAddStatus("error");
       setTimeout(() => setAddStatus("idle"), 2200);
-    };
+      return;
+    }
+
+    setAddStatus("loading");
+    try {
+      await handleAddItem({
+        productId: product._id,
+        variantId: activeVariant._id,
+      });
+      handleGetCart().catch(() => {}); // refresh navbar cart badge
+      setAddStatus("success");
+    } catch (error) {
+      console.error("Add to cart failed", error);
+      setAddStatus(error?.response?.status === 401 ? "signin" : "error");
+    }
+    setTimeout(() => setAddStatus("idle"), 2200);
+  };
 
   return (
     <>
@@ -211,17 +234,37 @@ const ProductDetail = () => {
                 </div>
               )}
 
-              {/* Main Image */}
+              {/* Main Image (swipe on mobile, fades when it changes) */}
               <div
                 className="relative w-full aspect-4/5 overflow-hidden group"
                 style={{ backgroundColor: "#f5f3f0" }}
+                onTouchStart={(e) => setTouchStartX(e.touches[0].clientX)}
+                onTouchEnd={(e) => {
+                  if (touchStartX === null || displayImages.length < 2) return;
+                  const dx = e.changedTouches[0].clientX - touchStartX;
+                  if (Math.abs(dx) > 40) {
+                    setSelectedImage((prev) =>
+                      dx < 0
+                        ? prev === displayImages.length - 1
+                          ? 0
+                          : prev + 1
+                        : prev === 0
+                          ? displayImages.length - 1
+                          : prev - 1,
+                    );
+                  }
+                  setTouchStartX(null);
+                }}
               >
                 <img
+                  key={
+                    displayImages[selectedImage]?.url || displayImages[0].url
+                  }
                   src={
                     displayImages[selectedImage]?.url || displayImages[0].url
                   }
                   alt={product.title}
-                  className="w-full h-full object-cover transition-opacity duration-500"
+                  className="img-fade w-full h-full object-cover transition-transform duration-[1200ms] group-hover:scale-105"
                 />
                 {displayImages.length > 1 && (
                   <>
@@ -295,6 +338,23 @@ const ProductDetail = () => {
                         />
                       </svg>
                     </button>
+
+                    {/* Dots (mobile only; desktop has thumbnails) */}
+                    <div className="absolute bottom-4 inset-x-0 flex justify-center gap-2 md:hidden">
+                      {displayImages.map((_, idx) => (
+                        <span
+                          key={idx}
+                          className="h-1 rounded-full transition-all duration-300"
+                          style={{
+                            width: selectedImage === idx ? "20px" : "6px",
+                            backgroundColor:
+                              selectedImage === idx
+                                ? "#C9A96E"
+                                : "rgba(251,249,246,0.85)",
+                          }}
+                        />
+                      ))}
+                    </div>
                   </>
                 )}
               </div>

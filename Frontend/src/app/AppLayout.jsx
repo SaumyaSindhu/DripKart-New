@@ -1,15 +1,24 @@
-import React from 'react'
-import Nav from '../features/Shared/Components/Nav'
-import { Outlet } from 'react-router'
+import React, { useEffect } from "react";
+import Nav from "../features/Shared/Components/Nav";
+import { Outlet, useLocation } from "react-router";
 
 const AppLayout = () => {
-    return (
-        <>
-            <Nav />
-            <Outlet />
-        </>
+  const { pathname } = useLocation();
 
-    )
-}
+  // every new page starts at the top
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
 
-export default AppLayout
+  return (
+    <>
+      <Nav />
+      {/* key restarts the fade-in on every page change */}
+      <div key={pathname} className="page-fade">
+        <Outlet />
+      </div>
+    </>
+  );
+};
+
+export default AppLayout;

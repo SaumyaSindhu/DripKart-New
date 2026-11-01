@@ -134,3 +134,40 @@ html {
   .label-in, .pop-in, .shake { animation: none; }
   .check-draw { animation: none; stroke-dashoffset: 0; }
 }
+
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.page-fade { animation: pageIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Mobile menu drawer */
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); }
+  to   { transform: none; }
+}
+.drawer-panel { animation: slideInLeft 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.drawer-link  { animation: labelIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: var(--i, 0ms); }
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #f0eeea 25%, #e7e4de 37%, #f0eeea 63%);
+  background-size: 1200px 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+/* Product detail main image fade when it changes */
+@keyframes imgIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.img-fade { animation: imgIn 0.6s ease both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .page-fade, .drawer-panel, .drawer-link, .img-fade { animation: none; }
+  .skeleton { animation: none; }
+}

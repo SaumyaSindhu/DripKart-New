@@ -1,16 +1,6 @@
 import React, { useMemo } from "react";
 import { Link } from "react-router";
-
-const SIZE_ORDER = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "3XL"];
-
-const sortSizes = (a, b) => {
-  const ai = SIZE_ORDER.indexOf(a);
-  const bi = SIZE_ORDER.indexOf(b);
-  if (ai !== -1 && bi !== -1) return ai - bi;
-  if (ai !== -1) return -1;
-  if (bi !== -1) return 1;
-  return String(a).localeCompare(String(b), undefined, { numeric: true });
-};
+import { sortSizes } from "../utils/productSearch";
 
 const ProductCard = ({ product }) => {
   const firstImage = product.images?.[0]?.url || "/snitch_editorial_warm.png";

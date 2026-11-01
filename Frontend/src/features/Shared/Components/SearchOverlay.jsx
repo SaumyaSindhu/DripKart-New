@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router";
 import { useProduct } from "../../products/hooks/useProduct";
+import { matchesQuery } from "../../products/utils/productSearch";
 
 // Edit these quick-search chips to match your catalogue
 const SUGGESTIONS = ["Shirt", "Oversized", "Black", "Jacket"];
@@ -39,32 +40,30 @@ const SearchOverlay = ({ open, onClose }) => {
     };
   }, [open]);
 
-  const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return [];
-
-    return (products || [])
-      .filter((product) => {
-        const variantValues = (product.variants || []).flatMap((v) =>
-          Object.values(v.attributes || {}),
-        );
-        const haystack = [product.title, product.description, ...variantValues]
-          .join(" ")
-          .toLowerCase();
-        // every typed word must appear somewhere
-        return q.split(/\s+/).every((word) => haystack.includes(word));
-      })
-      .slice(0, 8);
+  // every product that matches, and the first 8 for the quick list
+  const matches = useMemo(() => {
+    if (!query.trim()) return [];
+    return (products || []).filter((product) => matchesQuery(product, query));
   }, [query, products]);
+
+  const results = matches.slice(0, 8);
 
   const goToProduct = (id) => {
     onClose();
     navigate(`/product/${id}`);
   };
 
+  // Enter (or the "view all" link) opens the full results on the shop page
+  const goToShop = () => {
+    const q = query.trim();
+    if (!q) return;
+    onClose();
+    navigate(`/shop?q=${encodeURIComponent(q)}`);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (results.length > 0) goToProduct(results[0]._id);
+    goToShop();
   };
 
   if (!open) return null;
@@ -155,61 +154,73 @@ const SearchOverlay = ({ open, onClose }) => {
 
           {/* Results */}
           {query.trim() && results.length > 0 && (
-            <ul className="pt-6">
-              {results.map((product, i) => {
-                const img =
-                  product.images?.[0]?.url || "/snitch_editorial_warm.png";
-                return (
-                  <li
-                    key={product._id}
-                    className="search-result"
-                    style={{ "--i": `${i * 50}ms` }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => goToProduct(product._id)}
-                      className="group w-full flex items-center gap-5 py-4 border-b text-left"
-                      style={{ borderColor: "#e4e2df" }}
+            <>
+              <ul className="pt-6">
+                {results.map((product, i) => {
+                  const img =
+                    product.images?.[0]?.url || "/snitch_editorial_warm.png";
+                  return (
+                    <li
+                      key={product._id}
+                      className="search-result"
+                      style={{ "--i": `${i * 50}ms` }}
                     >
-                      <div
-                        className="w-14 h-[70px] overflow-hidden shrink-0"
-                        style={{ backgroundColor: "#f5f3f0" }}
+                      <button
+                        type="button"
+                        onClick={() => goToProduct(product._id)}
+                        className="group w-full flex items-center gap-5 py-4 border-b text-left"
+                        style={{ borderColor: "#e4e2df" }}
                       >
-                        <img
-                          src={img}
-                          alt={product.title}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4
-                          className="text-lg truncate transition-colors duration-300 group-hover:text-[#C9A96E]"
-                          style={{
-                            fontFamily: "'Cormorant Garamond', serif",
-                            color: "#1b1c1a",
-                          }}
+                        <div
+                          className="w-14 h-[70px] overflow-hidden shrink-0"
+                          style={{ backgroundColor: "#f5f3f0" }}
                         >
-                          {product.title}
-                        </h4>
-                        <p
-                          className="text-[12px] truncate"
-                          style={{ color: "#7A6E63" }}
+                          <img
+                            src={img}
+                            alt={product.title}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4
+                            className="text-lg truncate transition-colors duration-300 group-hover:text-[#C9A96E]"
+                            style={{
+                              fontFamily: "'Cormorant Garamond', serif",
+                              color: "#1b1c1a",
+                            }}
+                          >
+                            {product.title}
+                          </h4>
+                          <p
+                            className="text-[12px] truncate"
+                            style={{ color: "#7A6E63" }}
+                          >
+                            {product.description}
+                          </p>
+                        </div>
+                        <span
+                          className="text-[10px] uppercase tracking-[0.2em] font-medium"
+                          style={{ color: "#1b1c1a" }}
                         >
-                          {product.description}
-                        </p>
-                      </div>
-                      <span
-                        className="text-[10px] uppercase tracking-[0.2em] font-medium"
-                        style={{ color: "#1b1c1a" }}
-                      >
-                        {product.price?.currency}{" "}
-                        {product.price?.amount?.toLocaleString()}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+                          {product.price?.currency}{" "}
+                          {product.price?.amount?.toLocaleString()}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              <button
+                type="button"
+                onClick={goToShop}
+                className="mt-8 link-underline text-[10px] uppercase tracking-[0.22em] font-medium transition-colors hover:text-[#C9A96E]"
+                style={{ color: "#1b1c1a" }}
+              >
+                View all {matches.length}{" "}
+                {matches.length === 1 ? "result" : "results"} →
+              </button>
+            </>
           )}
 
           {/* No results */}

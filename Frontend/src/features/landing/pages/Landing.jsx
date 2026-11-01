@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { useProduct } from "../../products/hooks/useProduct";
 import HeroSlider from "../components/HeroSlider";
@@ -7,13 +7,17 @@ import NewArrivals from "../components/NewArrivals";
 import EditorialTiles from "../components/EditorialTiles";
 import BrandStatement from "../components/BrandStatement";
 import Footer from "../../Shared/Components/Footer";
+import ShopByColor from "../components/ShopByColor";
 
 const Landing = () => {
   const products = useSelector((state) => state.product.products);
   const { handleGetAllProducts } = useProduct();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    handleGetAllProducts();
+    handleGetAllProducts()
+      .catch((err) => console.error("Failed to load products", err))
+      .finally(() => setLoading(false));
   }, []);
 
   // newest first (copy before sorting: redux state is read-only)
@@ -38,9 +42,13 @@ const Landing = () => {
           fontFamily: "'Inter', sans-serif",
         }}
       >
-        <HeroSlider products={latest.slice(0, 4)} />
+        <HeroSlider
+          products={latest.slice(0, 4)}
+          loading={loading && latest.length === 0}
+        />
         <BigMarquee />
-        <NewArrivals products={latest.slice(0, 10)} />
+        <NewArrivals products={latest.slice(0, 10)} loading={loading && latest.length === 0} />
+        <ShopByColor products={latest} />
         <EditorialTiles products={[...latest].reverse().slice(0, 3)} />
         <BrandStatement />
         <Footer />

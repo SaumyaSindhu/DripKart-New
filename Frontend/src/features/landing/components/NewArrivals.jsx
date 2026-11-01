@@ -2,13 +2,33 @@ import React, { useRef } from "react";
 import { Link } from "react-router";
 import Reveal from "../../Shared/Components/Reveal";
 import ProductCard from "../../products/components/ProductCard";
+import ProductCardSkeleton from "../../products/components/ProductCardSkeleton";
 
-const NewArrivals = ({ products }) => {
+const NewArrivals = ({ products, loading = false }) => {
   const scroller = useRef(null);
 
   const scrollByCards = (direction) => {
     scroller.current?.scrollBy({ left: direction * 420, behavior: "smooth" });
   };
+
+  if (loading) {
+    return (
+      <section
+        className="max-w-7xl mx-auto px-8 lg:px-16 xl:px-24 py-24"
+        aria-hidden="true"
+      >
+        <div className="skeleton h-3 w-24 mb-4" />
+        <div className="skeleton h-10 w-64 mb-12" />
+        <div className="flex gap-6 overflow-hidden">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="shrink-0 w-[70%] sm:w-[40%] lg:w-[23%]">
+              <ProductCardSkeleton />
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   if (!products || products.length === 0) return null;
 
