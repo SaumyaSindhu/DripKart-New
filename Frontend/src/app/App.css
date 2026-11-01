@@ -1,1 +1,101 @@
 @import "tailwindcss";
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* ── Scroll reveal (used by <Reveal />) ── */
+.reveal {
+  opacity: 0;
+  transform: translateY(32px);
+  transition:
+    opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* ── Marquee (announcement bar, later banners) ── */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 35s linear infinite;
+}
+
+/* ── Gold underline on hover for nav links ── */
+.link-underline {
+  position: relative;
+}
+.link-underline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  height: 1px;
+  width: 100%;
+  background: #C9A96E;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.link-underline:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* ── Search overlay ── */
+@keyframes panelDown {
+  from { transform: translateY(-24px); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.search-panel    { animation: panelDown 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.search-backdrop { animation: fadeIn 0.3s ease both; }
+.search-result   { animation: panelDown 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: var(--i, 0ms); }
+
+/* Respect users who turn animations off */
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .animate-marquee, .search-panel, .search-backdrop, .search-result { animation: none; }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: none; }
+}
+.animate-fade-up {
+  animation: fadeUp 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
+.animate-marquee-slow {
+  animation: marquee 60s linear infinite;
+}
+
+/* Hero image cross-fade + slow zoom */
+.hero-img {
+  opacity: 0;
+  transform: scale(1.08);
+  transition: opacity 1.2s ease, transform 7s ease-out;
+}
+.hero-img.is-active {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.hide-scrollbar { scrollbar-width: none; }
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up, .animate-marquee-slow { animation: none; }
+  .hero-img { transition: none; transform: none; }
+}
+

@@ -8,8 +8,9 @@ import Home from "../features/products/pages/Home";
 import ProductDetail from "../features/products/pages/ProductDetail";
 import SellerProductDetails from "../features/products/pages/SellerProductDetails";
 import Cart from "../features/cart/pages/Cart";
-import AppLayout from "./Applayout";
+import AppLayout from "./AppLayout";
 import OrderSuccess from "../features/cart/pages/OrderSuccess";
+import Landing from "../features/landing/pages/Landing";
 
 export const routes = createBrowserRouter([
 
@@ -26,6 +27,10 @@ export const routes = createBrowserRouter([
         children: [
             {
                 path: "/",
+                element: <Landing />,
+            },
+            {
+                path: "/shop",
                 element: <Home />,
             },
             {
