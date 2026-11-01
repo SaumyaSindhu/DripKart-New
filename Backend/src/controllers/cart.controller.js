@@ -84,7 +84,9 @@ export const getCart = async (req, res) => {
     let cart = await getCartDetails(user._id)
 
     if (!cart) {
-        cart = await cartModel.create({ user: user._id })
+      cart =
+        (await cartModel.findOne({ user: user._id })) ||
+        (await cartModel.create({ user: user._id }));
     }
 
     return res.status(200).json({
@@ -140,6 +142,28 @@ export const incrementCartItemQuantity = async (req, res) => {
         success: true
     })
 }
+
+export const removeCartItem = async (req, res) => {
+  const { productId, variantId } = req.params;
+
+  const cart = await cartModel.findOneAndUpdate(
+    { user: req.user._id },
+    { $pull: { items: { product: productId, variant: variantId } } },
+    { new: true },
+  );
+
+  if (!cart) {
+    return res.status(404).json({
+      message: "Cart not found",
+      success: false,
+    });
+  }
+
+  return res.status(200).json({
+    message: "Item removed from cart successfully",
+    success: true,
+  });
+};
 
 export const createOrderController = async (req, res) => {
 
