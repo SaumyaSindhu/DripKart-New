@@ -172,7 +172,7 @@ const SearchOverlay = ({ open, onClose }) => {
                         style={{ borderColor: "#e4e2df" }}
                       >
                         <div
-                          className="w-14 h-[70px] overflow-hidden shrink-0"
+                          className="w-14 h-17.5 overflow-hidden shrink-0"
                           style={{ backgroundColor: "#f5f3f0" }}
                         >
                           <img
