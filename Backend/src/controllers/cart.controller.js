@@ -63,11 +63,13 @@ export const addToCart = async (req, res) => {
         })
     }
 
+    const chosenVariant = product.variants.id(variantId);
+
     cart.items.push({
         product: productId,
         variant: variantId,
         quantity,
-        price: product.price
+        price: chosenVariant?.price?.amount ? chosenVariant.price : product.price
     })
 
     await cart.save()
@@ -282,6 +284,7 @@ export const createBuyNowOrderController = async (req, res) => {
       orderId: order.id,
     },
     price: { amount, currency },
+    source: "buy-now",
     orderItems: [
       {
         title: product.title,
@@ -329,13 +332,53 @@ export const verifyOrderController = async (req, res) => {
     }, razorpay_signature, config.RAZORPAY_KEY_SECRET)
 
     if (!isPaymentValid) {
-        payment.status = "failed"
-        await payment.save()
+      payment.status = "failed";
+      await payment.save();
 
-        return res.status(400).json({
-            message: "Payment verification failed",
-            success: false
-        })
+      // reduce stock (the filter keeps it from going below zero)
+      await Promise.all(
+        payment.orderItems.map(async (item) => {
+          const result = await productModel.updateOne(
+            {
+              _id: item.productId,
+              variants: {
+                $elemMatch: {
+                  _id: item.variantId,
+                  stock: { $gte: item.quantity },
+                },
+              },
+            },
+            { $inc: { "variants.$.stock": -item.quantity } },
+          );
+          if (result.modifiedCount === 0) {
+            console.warn(
+              `Stock could not be reduced for product ${item.productId} variant ${item.variantId}`,
+            );
+          }
+        }),
+      );
+
+      // a paid CART checkout empties those items (Buy Now never touched the cart)
+      if (payment.source === "cart") {
+        await cartModel.updateOne(
+          { user: payment.user },
+          {
+            $pull: {
+              items: {
+                $or: payment.orderItems.map((i) => ({
+                  product: i.productId,
+                  variant: i.variantId,
+                })),
+              },
+            },
+          },
+        );
+      }
+
+      return res.status(400).json({
+        message: "Payment verification failed",
+        success: false,
+      });
     }
 
     payment.status = "paid"

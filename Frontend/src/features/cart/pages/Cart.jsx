@@ -33,7 +33,7 @@ const Cart = () => {
   } = useCart();
   const navigate = useNavigate();
   const { error, isLoading, Razorpay } = useRazorpay();
-  const user = useSelector((state) => state.user);
+  const user = useSelector((state) => state.auth.user);
 
   /* Which cart row is being removed / failed to remove (key: productId-variantId) */
   const [removingKey, setRemovingKey] = useState(null);
@@ -366,7 +366,7 @@ const Cart = () => {
                               {stock > 0 ? `${stock} in stock` : "Out of stock"}
                             </p>
                           )}
-                          {displayPrice.amount !== variantPrice.amount && (
+                          {variantPrice && displayPrice.amount !== variantPrice.amount && (
                             <>
                               {displayPrice.amount > variantPrice.amount ? (
                                 <p className="text-[10px] uppercase tracking-[0.15em] mb-4 text-green-800 font-bold">

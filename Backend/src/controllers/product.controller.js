@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import productModel from "../models/product.model.js";
 import { uploadFile } from "../services/storage.service.js";
 
@@ -60,6 +61,10 @@ export async function getAllProducts(req, res) {
 export async function getProductDetails(req, res) {
     const { id } = req.params;
 
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(404).json({ message: "Product not found", success: false });
+    }
+
     const product = await productModel.findById(id)
 
     if (!product) {
@@ -107,7 +112,12 @@ export async function addProductVariant(req, res) {
 
     const price = req.body.priceAmount
     const stock = req.body.stock
-    const attributes = JSON.parse(req.body.attributes || "{}")
+    let attributes;
+    try {
+      attributes = JSON.parse(req.body.attributes || "{}");
+    } catch {
+      return res.status(400).json({ message: "Attributes must be valid JSON", success: false });
+    }
 
     console.log(price)
 
