@@ -119,8 +119,6 @@ export async function addProductVariant(req, res) {
       return res.status(400).json({ message: "Attributes must be valid JSON", success: false });
     }
 
-    console.log(price)
-
     product.variants.push({
         images,
         price: {

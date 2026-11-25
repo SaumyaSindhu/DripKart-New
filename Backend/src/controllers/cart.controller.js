@@ -56,7 +56,7 @@ export const addToCart = async (req, res) => {
         "items.variant": variantId,
       },
       { $inc: { "items.$.quantity": quantity } },
-      { new: true },
+      { returnDocument: 'after' },
     );
 
     return res.status(200).json({
@@ -154,7 +154,7 @@ export const incrementCartItemQuantity = async (req, res) => {
       "items.variant": variantId,
     },
     { $inc: { "items.$.quantity": 1 } },
-    { new: true },
+    { returnDocument: 'after' },
   );
 
   return res.status(200).json({
@@ -180,7 +180,7 @@ export const decrementCartItemQuantity = async (req, res) => {
       },
     },
     { $inc: { "items.$.quantity": -1 } },
-    { new: true },
+    { returnDocument: 'after' },
   );
 
   if (!cart) {
@@ -202,7 +202,7 @@ export const removeCartItem = async (req, res) => {
   const cart = await cartModel.findOneAndUpdate(
     { user: req.user._id },
     { $pull: { items: { product: productId, variant: variantId } } },
-    { new: true },
+    { returnDocument: 'after' },
   );
 
   if (!cart) {
@@ -376,7 +376,7 @@ export const verifyOrderController = async (req, res) => {
         "razorpay.signature": razorpay_signature,
       },
     },
-    { new: true },
+    { returnDocument: 'after' },
   );
 
   if (!paidPayment) {
