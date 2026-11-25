@@ -40,7 +40,7 @@ const paymentSchema = new mongoose.Schema({
   ],
 });
 
-
+paymentSchema.index({ user: 1 }); // index on user field for faster lookups
 const paymentModel = mongoose.model("payment", paymentSchema)
 
 export default paymentModel;

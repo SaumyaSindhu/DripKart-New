@@ -30,6 +30,7 @@ const cartSchema = new mongoose.Schema({
     ]
 })
 
+cartSchema.index({ user: 1 }) // index on user field for faster lookups
 const cartModel = mongoose.model('cart', cartSchema);
 
 export default cartModel;

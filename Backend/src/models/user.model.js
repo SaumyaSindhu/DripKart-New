@@ -33,7 +33,7 @@ userSchema.methods.comparePassword = async function (password) {
     return await bcrypt.compare(password, this.password);
 }
 
-
+userSchema.index({ contact: 1 }); // index on contact field for faster lookups
 const userModel = mongoose.model('user', userSchema);
 
 export default userModel;

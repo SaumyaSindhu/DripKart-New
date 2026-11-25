@@ -53,7 +53,7 @@ const productSchema = new mongoose.Schema({
     ]
 }, { timestamps: true })
 
-
+productSchema.index({ seller: 1 }); // index on seller field for faster lookups
 const productModel = mongoose.model('product', productSchema);
 
 export default productModel;
